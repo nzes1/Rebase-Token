@@ -32,7 +32,7 @@ pragma solidity ^0.8.24;
 
 import {ERC20} from "@openzeppelin/contracts@5.5.0/token/ERC20/ERC20.sol";
 import {Ownable} from "@openzeppelin/contracts@5.5.0/access/Ownable.sol";
-import {AccessControl} "@openzeppelin/contracts@5.5.0/access/AccessControl.sol"
+import {AccessControl} from "@openzeppelin/contracts@5.5.0/access/AccessControl.sol";
 
 /**
  * @title Cross Chain Rebase Token
@@ -106,8 +106,8 @@ contract RebaseToken is ERC20, Ownable, AccessControl {
      * @param _amount Amount to mint
      */
     function mint(address _to, uint256 _amount) external onlyRole(MINT_AND_BURN_ROLE) {
-        _mintAccruedInterest(_user);
-        s_userInterestRates[_user] = s_interestRate;
+        _mintAccruedInterest(_to);
+        s_userInterestRates[_to] = s_interestRate;
         _mint(_to, _amount);
     }
 
@@ -129,7 +129,7 @@ contract RebaseToken is ERC20, Ownable, AccessControl {
      * @param _user The user whom to fetch the interest rate for
      * @return The interest rate of a user.
      */
-    function getUserInterestRate(address _user) external view returns (uint256 IR) {
+    function getUserInterestRate(address _user) external view returns (uint256) {
         return s_userInterestRates[_user];
     }
 
@@ -137,7 +137,7 @@ contract RebaseToken is ERC20, Ownable, AccessControl {
      * @notice Fetches the current global interest rate set for future depositers.
      * @return The global interest rate.
      */
-    function getGlobalInterestRate() external view returns (uint256 IR) {
+    function getGlobalInterestRate() external view returns (uint256) {
         return s_interestRate;
     }
 
@@ -238,7 +238,7 @@ contract RebaseToken is ERC20, Ownable, AccessControl {
             _amount = balanceOf(_from);
         }
 
-        if (balannceOf(_to) == 0) {
+        if (balanceOf(_to) == 0) {
             s_userInterestRates[_to] = s_userInterestRates[_from];
         }
 
