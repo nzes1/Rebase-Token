@@ -2,37 +2,9 @@
 
 pragma solidity ^0.8.24;
 
-/**
- * @dev Contract Layout based on RareSkills Solidity Style guide
- * here: https://www.rareskills.io/post/solidity-style-guide which expounds on
- * Solidity's recommended guide on the docs.
- * Type Declarations
- * State Variables
- * Events
- * Errors
- * Modifiers
- * Constructor
- * receive
- * fallback
- * Functions:
- *  External
- *      External View
- *      External pure
- *  Public
- *      Public View
- *      Public pure
- *  Internal
- *      Internal View
- *      Internal Pure
- *  Private
- *      Private View
- *      Private Pure
- *
- */
-
-import {ERC20} from "@openzeppelin/contracts@5.5.0/token/ERC20/ERC20.sol";
-import {Ownable} from "@openzeppelin/contracts@5.5.0/access/Ownable.sol";
-import {AccessControl} from "@openzeppelin/contracts@5.5.0/access/AccessControl.sol";
+import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 /**
  * @title Cross Chain Rebase Token
@@ -44,7 +16,9 @@ import {AccessControl} from "@openzeppelin/contracts@5.5.0/access/AccessControl.
  * reflect the interest accrued.
  */
 
+// aderyn-ignore-next-line(centralization-risk)
 contract RebaseToken is ERC20, Ownable, AccessControl {
+
     /*//////////////////////////////////////////////////////////////
                             STATE VARIABLES
     //////////////////////////////////////////////////////////////*/
@@ -97,6 +71,7 @@ contract RebaseToken is ERC20, Ownable, AccessControl {
      * no access restriction by default.
      */
     function grantMintAndBurnRole(address _account) external onlyOwner {
+        // aderyn-ignore-next-line(unchecked-return)
         _grantRole(MINT_AND_BURN_ROLE, _account);
     }
 
@@ -117,9 +92,6 @@ contract RebaseToken is ERC20, Ownable, AccessControl {
      * @param _amount Amount to burn. If set to `type(uint256).max`, it burns the user's entire balance.
      */
     function burn(address _from, uint256 _amount) external onlyRole(MINT_AND_BURN_ROLE) {
-        if (_amount == type(uint256).max) {
-            _amount = balanceOf(_from);
-        }
         _mintAccruedInterest(_from);
         _burn(_from, _amount);
     }
@@ -314,4 +286,5 @@ contract RebaseToken is ERC20, Ownable, AccessControl {
         uint256 linearInterest = PRECISION_FACTOR + (s_userInterestRates[_user] * timeElapsed);
         return linearInterest;
     }
+
 }
