@@ -6,6 +6,8 @@ import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
+import {console} from "forge-std/Test.sol";
+
 /**
  * @title Cross Chain Rebase Token
  * @author Nzesi
