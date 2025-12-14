@@ -19,6 +19,8 @@ contract RebaseTokenUnitTest is Test {
     address TEST_USER_1 = makeAddr("Test User 1");
     address TEST_USER_2 = makeAddr("Test User 2");
 
+    event RebaseToken__InterestRateUpdated(uint256 oldInterestRate, uint256 newInterestRate);
+
     function setUp() public {
         vm.label(TEST_USER_1, "USER_1");
         vm.label(TEST_USER_2, "USER_2");
@@ -163,9 +165,78 @@ contract RebaseTokenUnitTest is Test {
         rebaseToken.burn(recipient, amount);
     }
 
+    function testFuzz_PrincipalBalance_UserPrincipalAlwaysEqualsTheirTotalDepositAmount(uint256 _amount1) public {
+        _amount1 = bound(_amount1, 1 ether, type(uint96).max);
+
+        vm.deal(TEST_USER_2, _amount1);
+        vm.prank(TEST_USER_2);
+        vault.deposit{value: _amount1}();
+
+        assertEq(rebaseToken.getPrincipalBalanceOf(TEST_USER_2), _amount1);
+
+        // fast forward, principle will remain the initial _amount1 as long as they don't do a second deposit/transfer
+        // which would trigger rewards  collection/minting
+        vm.warp(block.timestamp + 1 days);
+
+        assertEq(rebaseToken.getPrincipalBalanceOf(TEST_USER_2), _amount1);
+    }
+
+    function testFuzz_Revert_WhenAdminSetsHigherInterestRateThanCurrentRate(uint256 newRate) public {
+        newRate = bound(newRate, rebaseToken.getGlobalInterestRate() + 1, type(uint96).max);
+
+        vm.prank(owner);
+        vm.expectRevert(RebaseToken.RebaseToken__InterestRateCanOnlyBeDecreased.selector);
+        rebaseToken.setInterestRate(newRate);
+    }
+
+    function test_SettingNewInterestRateEmits(uint256 newRate) public {
+        newRate = bound(newRate, 1, 5e10 - 1);
+        vm.prank(owner);
+        vm.expectEmit(false, false, false, true, address(rebaseToken));
+        emit RebaseToken__InterestRateUpdated(5e10, newRate);
+        rebaseToken.setInterestRate(newRate);
+    }
+
+    function testFuzz_transferFrom_UsersCanMintRBTAndApproveOtherUsersToSpendTheirTokensOnTheirBehalf(
+        uint256 amount,
+        uint256 transferAmount
+    )
+        public
+    {
+        address spender = makeAddr("Spender");
+        amount = bound(amount, 0.5 ether, type(uint96).max);
+        transferAmount = bound(transferAmount, 0.25 ether, amount - 0.25 ether);
+
+        // User 1 deposits and approves user 2 to spend their tokens
+        vm.deal(TEST_USER_1, amount);
+        vm.startPrank(TEST_USER_1);
+        vault.deposit{value: amount}();
+        vm.warp(block.timestamp + 2 hours);
+        rebaseToken.approve(spender, transferAmount);
+        vm.stopPrank();
+
+        // Assert that user 1's balance is intact and user 2 allowance is set correcttly
+        assertEq(rebaseToken.getPrincipalBalanceOf(TEST_USER_1), amount);
+        assertGt(rebaseToken.balanceOf(TEST_USER_1), amount);
+        uint256 spenderAllowance = rebaseToken.allowance(TEST_USER_1, spender);
+        assertEq(spenderAllowance, transferAmount);
+
+        // spend allowance
+        vm.prank(spender);
+        rebaseToken.transferFrom(TEST_USER_1, TEST_USER_2, transferAmount);
+
+        // // assertions
+        assertEq(rebaseToken.allowance(TEST_USER_1, TEST_USER_2), 0);
+        assertEq(rebaseToken.balanceOf(TEST_USER_2), transferAmount);
+        // assertLt(rebaseToken.balanceOf(TEST_USER_1), amount);
+    }
+
     // Helpers
     function addVaultRewards(uint256 _rewardsAmount) internal {
         payable(address(vault)).call{value: _rewardsAmount}("");
     }
+    //79228162513264337593543950533
+    //79228162513764337593543950533
+
 
 }

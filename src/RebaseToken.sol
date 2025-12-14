@@ -61,8 +61,8 @@ contract RebaseToken is ERC20, Ownable, AccessControl {
         if (s_interestRate < _newInterestRate) {
             revert RebaseToken__InterestRateCanOnlyBeDecreased();
         } else {
-            s_interestRate = _newInterestRate;
             emit RebaseToken__InterestRateUpdated(s_interestRate, _newInterestRate);
+            s_interestRate = _newInterestRate;
         }
     }
 
