@@ -24,6 +24,7 @@ contract RebaseTokenUnitTest is Test {
     function setUp() public {
         vm.label(TEST_USER_1, "USER_1");
         vm.label(TEST_USER_2, "USER_2");
+        vm.label(owner, "OWNER");
         vm.startPrank(owner);
         vm.deal(owner, 10 ether);
         rebaseToken = new RebaseToken();
@@ -60,6 +61,30 @@ contract RebaseTokenUnitTest is Test {
         assertApproxEqAbs(bal2 - bal1, bal3 - bal2, 1);
     }
 
+    function test_deposit_DepositingIntoVaultEmits() public {
+        vm.deal(TEST_USER_1, 2 ether);
+        vm.startPrank(TEST_USER_1);
+        vm.expectEmit(true, false, false, true);
+        emit Vault.Vault__Deposited(TEST_USER_1, 2 ether);
+        vault.deposit{value: 2 ether}();
+        vm.stopPrank();
+    }
+
+    function test_redeem_RedeemingFromVaultEmits() public {
+        vm.deal(TEST_USER_2, 5 ether);
+        vm.startPrank(TEST_USER_2);
+        vault.deposit{value: 4 ether}();
+
+        vm.warp(block.timestamp + 1 days);
+        // Since time has passed,interest has accrued and thus the amount redeemed is 4+ ether.
+        // Check data setting to false will allow the emitted event to pass even though its more than 4 ether that ends
+        // up being redeemed.
+        vm.expectEmit(true, false, false, false, address(vault));
+        emit Vault.Vault__Redeemed(TEST_USER_2, 4 ether);
+        vault.redeem(type(uint256).max);
+        vm.stopPrank();
+    }
+
     function testFuzz_redeem_UsersCanDepositAndRedeemImmediately(uint256 _amount) public {
         _amount = bound(_amount, 5e17, type(uint96).max);
         vm.deal(TEST_USER_1, _amount);
@@ -92,7 +117,7 @@ contract RebaseTokenUnitTest is Test {
         uint256 balancePlusInterest = rebaseToken.balanceOf(TEST_USER_1);
 
         // Make sure vault has that amount of rewards for user to be able to redeem.
-        // On Setup, 10 ether was added as rewards, lets add another minimum of the acrued interest
+        // On Setup, 10 ether was added as rewards, lets add another minimum of the accrued interest
         uint256 rewardsToAdd = balancePlusInterest - amount;
         vm.deal(owner, rewardsToAdd);
         vm.prank(owner);
@@ -150,7 +175,8 @@ contract RebaseTokenUnitTest is Test {
     function test_Revert_IfUserWithoutMintAndBurnRoleAttemptsToMintOrBurnRBTs(
         address user,
         address recipient,
-        uint256 amount
+        uint256 amount,
+        uint256 interestRate
     )
         public
     {
@@ -158,7 +184,7 @@ contract RebaseTokenUnitTest is Test {
 
         vm.prank(user);
         vm.expectPartialRevert(IAccessControl.AccessControlUnauthorizedAccount.selector);
-        rebaseToken.mint(recipient, amount);
+        rebaseToken.mint(recipient, amount, interestRate);
 
         vm.prank(user);
         vm.expectPartialRevert(IAccessControl.AccessControlUnauthorizedAccount.selector);
@@ -215,7 +241,7 @@ contract RebaseTokenUnitTest is Test {
         rebaseToken.approve(spender, transferAmount);
         vm.stopPrank();
 
-        // Assert that user 1's balance is intact and user 2 allowance is set correcttly
+        // Assert that user 1's balance is intact and user 2 allowance is set correctly
         assertEq(rebaseToken.getPrincipalBalanceOf(TEST_USER_1), amount);
         assertGt(rebaseToken.balanceOf(TEST_USER_1), amount);
         uint256 spenderAllowance = rebaseToken.allowance(TEST_USER_1, spender);

@@ -15,3 +15,13 @@
    4. Howevr, the same way, if I transfer the tokens from 2nd wallet where rate is lowwer to the first one where rate is already high, the effective rate after transfer to wallet 1 become the  higher rate for all the tokens. This would mean I will be stealing from the protocol since depositing late I can still enjoy the early deposit rates as long as I entered the protocol early no matter how small deposit at start was.
    5. This is known not-issue. This is however not possible to effect the second persona. It is only the individual.
 5. We have a lot of centralization due to use of only owner on most administrative controls
+6. The interest rate if you look at how it changes with actions by user it is not really linear but rather compount interest. This is because the interest over time is calculated on any existing balance. so say I do a deposit, my initial interest say after 2 hours when I do a second depoist will be calculated based on only the initial deposit. But a second interest calculation say triggered by a deposit/transfer - then now that interest will not be calculated on the principal amount but rather the principal amount + any interest accrued last time updated. this means you can cheat the interest growth easily and earn so much interest which means it won't be linear but rather compounded. For demo project, this is acceptable. TODO: Research if I can close this gap.
+
+### Some Notes
+7. Cross chain messaging - ability to transfer arbitrary data across different chains
+8. Bridging - a type of cross chain messaging that only transfers assets like tokens
+9. 4 types of brodging exist:
+   1.  Burn and mint bridging - burn the tokens on source chain and mint on destination chain.
+   2.  Lock and unlock bridging - Lock in a vault on source and unlocked from vault on destination
+   3.  Lock and Mint - Lock on source chain especially if it doesn't support minting new tokens or burning tokens and thus cannot mint the tokens later when they are bridged back to source. New Wrapped versions of the tokens are minted on the destination chain
+   4.  Burn and Unlock - Burn on source and unlock on destination where the issuing chain will be the destination. Unlock on destination means the tokens are released from a vault on that chain.

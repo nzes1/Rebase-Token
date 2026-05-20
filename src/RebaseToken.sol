@@ -81,10 +81,11 @@ contract RebaseToken is ERC20, Ownable, AccessControl {
      * @notice Mints `_amount` amount of Rebase tokens to `_to`
      * @param _to User address
      * @param _amount Amount to mint
+     * @param _userInterestRate The user's interest rate to be used/set for the new mint
      */
-    function mint(address _to, uint256 _amount) external onlyRole(MINT_AND_BURN_ROLE) {
+    function mint(address _to, uint256 _amount, uint256 _userInterestRate) external onlyRole(MINT_AND_BURN_ROLE) {
         _mintAccruedInterest(_to);
-        s_userInterestRates[_to] = s_interestRate;
+        s_userInterestRates[_to] = _userInterestRate;
         _mint(_to, _amount);
     }
 
@@ -128,30 +129,40 @@ contract RebaseToken is ERC20, Ownable, AccessControl {
                             PUBLIC FUNCTIONS
     //////////////////////////////////////////////////////////////*/
     /**
-     * @notice Returns the user's current balance including interest accrued since the last update. i.e., since the last
-     * time they interacted with the protocol(mint, burn, transfer etc)
+     * @notice Returns the user's current balance including interest accrued since the last update.
      * @param _user The address of the user.
-     * @return The principal balance multiplied by the linear interest factor, scaled back down by 1e18.
+     * @return The up-to-date balance including accumulated interest.
      *
-     * @dev The principal balance (the amount of tokens originally minted to the user) is obtained from
-     *      the parent ERC20 contract's `balanceOf()`. This function applies linear interest of the form:
+     * @dev
+     * === Interest Model ===
+     * This contract uses linear (simple) interest, meaning interest accrues proportionally over time and
+     * does NOT compound.
      *
-     *          P(t) = P0 * (1 + r * t)
+     * We start from the definition of simple interest:
      *
-     *      where:
-     *        - P0 is the principal balance
-     *        - r is the user's interest rate, in 1e18 fixed-point precision
-     *        - t is the elapsed time since the last update
+     *     interest = principal * rate * time
      *
-     *      The interest factor `(1 + r * t)` is computed in fixed-point as:
+     * The total balance is therefore:
      *
-     *          interestFactor = 1e18 + (r * t) --> in the `_computeInterestFactorSinceLastUpdate` function
+     *     total = principal + interest
+     *           = principal + (principal * rate * time)
+     *           = principal * (1 + rate * time)
      *
-     *      The final result is:
+     * Where:
+     *   - principal = user's last recorded balance (from ERC20.balanceOf)
+     *   - rate      = per-second interest rate (scaled by 1e18)
+     *   - time      = seconds elapsed since last update
      *
-     *          balance = principal * interestFactor / 1e18
+     * === Fixed-Point Implementation ===
+     * Since Solidity does not support decimals, we scale values by 1e18:
      *
-     *      This function therefore returns the up-to-date balance including accumulated interest.
+     *     interestFactor = 1e18 + (rate * time)
+     *     balance        = principal * interestFactor / 1e18
+     *
+     * This is equivalent to:
+     *
+     *     balance = principal * (1 + rate * time)
+     *
      */
 
     function balanceOf(address _user) public view override returns (uint256) {
@@ -177,13 +188,9 @@ contract RebaseToken is ERC20, Ownable, AccessControl {
         _mintAccruedInterest(msg.sender);
         _mintAccruedInterest(_to);
 
-        if (_amount == type(uint256).max) {
-            _amount = balanceOf(msg.sender);
-        }
+        if (_amount == type(uint256).max) _amount = balanceOf(msg.sender);
 
-        if (balanceOf(_to) == 0) {
-            s_userInterestRates[_to] = s_userInterestRates[msg.sender];
-        }
+        if (balanceOf(_to) == 0) s_userInterestRates[_to] = s_userInterestRates[msg.sender];
 
         return super.transfer(_to, _amount);
     }
@@ -208,13 +215,9 @@ contract RebaseToken is ERC20, Ownable, AccessControl {
         _mintAccruedInterest(_from);
         _mintAccruedInterest(_to);
 
-        if (_amount == type(uint256).max) {
-            _amount = balanceOf(_from);
-        }
+        if (_amount == type(uint256).max) _amount = balanceOf(_from);
 
-        if (balanceOf(_to) == 0) {
-            s_userInterestRates[_to] = s_userInterestRates[_from];
-        }
+        if (balanceOf(_to) == 0) s_userInterestRates[_to] = s_userInterestRates[_from];
 
         return super.transferFrom(_from, _to, _amount);
     }

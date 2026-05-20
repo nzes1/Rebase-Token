@@ -16,6 +16,8 @@ wrap_comments = true
 sort_imports = true
 number_underscore = "thousands"
 ignore = ["./script/**/*", "./lib/**/*"] # Paths to ignore from formatting
+single_line_statement_blocks = "single"
+single_line_imports = true
 
 # Linter
 [lint]
