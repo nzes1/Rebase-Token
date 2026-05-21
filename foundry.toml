@@ -29,4 +29,9 @@ ignore = ["./test/**/*"]
 [fuzz]
 runs = 512
 
+# Fork testing RPC endpoints
+[rpc_endpoints]
+eth_sepolia_rpc = "https://eth-sepolia.g.alchemy.com/v2/zhfy5Q8m26qNzni3r-ixkMufWc2mCIb_"
+arbitrum_sepolia_rpc = "https://arb-sepolia.g.alchemy.com/v2/zhfy5Q8m26qNzni3r-ixkMufWc2mCIb_"
+
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
