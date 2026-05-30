@@ -5,6 +5,7 @@ libs = ["lib"]
 ignored_error_codes = [
     9302,
 ] # Ignore the return value warning from low level calls
+ignored_warnings_from = ["lib/"] # Ignore warnings from lib path
 
 # Formatter
 [fmt]

@@ -61,7 +61,7 @@ contract BurnMintRebaseTokenPool is TokenPool {
         // thus calculate the wrong thing.
         // We will thus just call validate internal function and instead of a calculated localAAMount, just pass the
         // sourceDenominatedAmount directly. I have left this comments here to explain why the implementation is
-        // different froim chainlllinks itself of tokenpool where they have this localAmount calculation thing.
+        // different from chainlinks itself of tokenpool where they have this localAmount calculation thing.
         // uint256 localAmount = _calculateLocalAmount(
         //     releaseOrMintIn.sourceDenominatedAmount, _parseRemoteDecimals(releaseOrMintIn.sourcePoolData)
         // );

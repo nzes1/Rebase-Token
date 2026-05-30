@@ -25,3 +25,49 @@
    2.  Lock and unlock bridging - Lock in a vault on source and unlocked from vault on destination
    3.  Lock and Mint - Lock on source chain especially if it doesn't support minting new tokens or burning tokens and thus cannot mint the tokens later when they are bridged back to source. New Wrapped versions of the tokens are minted on the destination chain
    4.  Burn and Unlock - Burn on source and unlock on destination where the issuing chain will be the destination. Unlock on destination means the tokens are released from a vault on that chain.
+
+
+# Bug on how remote token address is passed on  ChainUpdate struct
+# Root Cause Analysis: Address Truncation Bug
+
+## The Bug in configureTokenPool()
+
+Looking at lines 161 and 166 of CrossChainTest.t.sol:
+
+```solidity
+_remotePoolAddresses[0] = abi.encode(_remotePool);  // Line 161
+...
+remoteTokenAddress: abi.encode(_remoteTokenAddress),  // Line 166
+```
+
+## The Problem
+
+When you call `abi.encode(address)`, it pads the 20-byte address to 32 bytes.
+Example: 0x6E1734aC57e76fcD7fD66266Ae0C2547dB3A713a becomes:
+0x0000000000000000000000006e1734ac57e76fcd7fd66266ae0c2547db3a713a
+
+This is stored as `bytes` in the TokenPool's remoteChainConfigs mapping.
+
+## When getRemoteToken() is called
+
+The pool retrieves this 32-byte encoded value and returns it as the destTokenAddress.
+However, the EVM2AnyTokenTransfer struct expects a 20-byte address, not 32 bytes.
+
+## How Message Encoding Goes Wrong
+
+When the message is being encoded for cross-chain transmission by CCIPLocalSimulatorFork:
+1. The destTokenAddress comes back as 32 bytes: 0x0000...006e1734ac57e76fcd7fd66266ae0c2547db3a713a
+2. The message encoding tries to fit this into an address field (20 bytes)
+3. Due to how the encoding is done, it gets truncated
+
+The fix is to properly decode the bytes to address when setting it:
+
+```solidity
+// WRONG (current):
+remoteTokenAddress: abi.encode(_remoteTokenAddress),
+
+// CORRECT:
+remoteTokenAddress: _remoteTokenAddress,  // Or decode from bytes properly
+```
+
+OR ensure that when getting the remote token, we decode it properly from bytes to address.
