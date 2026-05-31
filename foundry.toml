@@ -16,7 +16,7 @@ line_length = 120
 wrap_comments = true
 sort_imports = true
 number_underscore = "thousands"
-ignore = ["./script/**/*", "./lib/**/*"] # Paths to ignore from formatting
+ignore = [ "./lib/**/*"] # Paths to ignore from formatting. Removed "./script/**/*",
 single_line_statement_blocks = "single"
 single_line_imports = true
 
