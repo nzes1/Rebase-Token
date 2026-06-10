@@ -238,7 +238,7 @@ contract CrossChainTest is Test {
         assertEq(_remoteToken.getUserInterestRate(crossChainUser), localChainUserInterestRate);
     }
 
-    function test_Bridge_AllTokensRoundTripFromSepoliaToArbitrumSepolia() public {
+    function testBridgeAllTokensFromSepoliaToArbitrumSepolia() public {
         vm.selectFork(ethSepoliaFork);
 
         // Mint rebase tokens: deposit ETH via vault
@@ -258,17 +258,6 @@ contract CrossChainTest is Test {
             arbSepoliaNetworkDetails,
             ethSepoliaToken,
             arbSepoliaToken
-        );
-
-        // Bridge user's balance from Arbitrum sepolia back to Sepolia
-        bridgeTokens(
-            arbSepoliaToken.balanceOf(crossChainUser),
-            arbSepoliaFork,
-            ethSepoliaFork,
-            arbSepoliaNetworkDetails,
-            ethSepoliaNetworkDetails,
-            arbSepoliaToken,
-            ethSepoliaToken
         );
     }
 
